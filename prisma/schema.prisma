@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["clientExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model menu_item {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String       @db.VarChar(255)
+  price         Int
+  restaurant_id String       @db.Uuid
+  created_at    DateTime     @default(now()) @db.Timestamp(6)
+  updated_at    DateTime     @default(now()) @db.Timestamp(6)
+  restaurant    restaurant   @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  order_item    order_item[]
+}
+
+model order {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id   String       @db.Uuid
+  restaurant_id String       @db.Uuid
+  status        String       @db.VarChar(255)
+  created_at    DateTime     @default(now()) @db.Timestamp(6)
+  updated_at    DateTime     @default(now()) @db.Timestamp(6)
+  user          user         @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  restaurant    restaurant   @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  order_item    order_item[]
+}
+
+model order_item {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_id     String    @db.Uuid
+  menu_item_id String    @db.Uuid
+  quantity     Int
+  created_at   DateTime  @default(now()) @db.Timestamp(6)
+  updated_at   DateTime  @default(now()) @db.Timestamp(6)
+  menu_item    menu_item @relation(fields: [menu_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  order        order     @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model reservation {
+  id                                   String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id                          String     @db.Uuid
+  restaurant_id                        String     @db.Uuid
+  table_number                         Int
+  reservation_time                     DateTime   @db.Timestamp(6)
+  status                               String     @db.VarChar(255)
+  created_at                           DateTime   @default(now()) @db.Timestamp(6)
+  updated_at                           DateTime   @default(now()) @db.Timestamp(6)
+  wait_staff_id                        String?    @db.Uuid
+  user_reservation_customer_idTouser   user       @relation("reservation_customer_idTouser", fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  restaurant                           restaurant @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_reservation_wait_staff_idTouser user?      @relation("reservation_wait_staff_idTouser", fields: [wait_staff_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model restaurant {
+  id                               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  description                      String?       @db.VarChar(255)
+  image                            String?       @db.VarChar(255)
+  name                             String        @db.VarChar(255)
+  created_at                       DateTime      @default(now()) @db.Timestamp(6)
+  updated_at                       DateTime      @default(now()) @db.Timestamp(6)
+  user_id                          String        @db.Uuid
+  tenant_id                        String        @db.VarChar(255)
+  manager_id                       String?       @db.Uuid
+  menu_item                        menu_item[]
+  order                            order[]
+  reservation                      reservation[]
+  user_restaurant_manager_idTouser user?         @relation("restaurant_manager_idTouser", fields: [manager_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_restaurant_user_idTouser    user          @relation("restaurant_user_idTouser", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user {
+  id                                          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                                       String        @unique @db.VarChar(255)
+  firstName                                   String?       @db.VarChar(255)
+  lastName                                    String?       @db.VarChar(255)
+  roq_user_id                                 String        @db.VarChar(255)
+  tenant_id                                   String        @db.VarChar(255)
+  created_at                                  DateTime      @default(now()) @db.Timestamp(6)
+  updated_at                                  DateTime      @default(now()) @db.Timestamp(6)
+  order                                       order[]
+  reservation_reservation_customer_idTouser   reservation[] @relation("reservation_customer_idTouser")
+  reservation_reservation_wait_staff_idTouser reservation[] @relation("reservation_wait_staff_idTouser")
+  restaurant_restaurant_manager_idTouser      restaurant[]  @relation("restaurant_manager_idTouser")
+  restaurant_restaurant_user_idTouser         restaurant[]  @relation("restaurant_user_idTouser")
+}
